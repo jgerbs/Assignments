@@ -1,66 +1,51 @@
 <?php
 
-/**
- * Remove invalid shows from the assoc. array that is passed as a parameter, 
- * and return an array which contains only valid entries.
- * 
- * Hint #1: make it easier on yourself by using a foreach loop
- * Hint #2: look into https://www.php.net/manual/en/function.unset.php
- *              - What should we pass to the unset function?
- * 
- * @param array $shows: an associative array of shows in a format following: 
- *              ['name' => '<date string>', ...]
- * 
- * @return array: an associative array containing shows that don't have 
- *                empty strings or null values for their names and dates
- */
-function filterInvalidShows(array $shows): array {
-    foreach($shows as $title => $date){
-        if($title !== null && $title !== '' && $date !== null && $date !== ''){
-            $filteredShows[$title] = $date;
-        }
-    }
+require_once 'Book.php';
+require_once 'BookRepository.php';
 
-    return $filteredShows ?? [];
+function printBook(Book $book) {
+	printf("\t- %s (with ISBN: %s) written by %s" . PHP_EOL,
+		$book->getName(),
+		$book->getInternationalStandardBookNumber(),
+		$book->getAuthor()
+	);
 }
 
-// An associative array of show names and associated dates when the shows aired
-$shows = [
-    'Seinfeld' => 'July 5th, 1989 - May 14th, 1998', 
-    'Curb Your Enthusiasm' => 'October 15th, 2000 - Current', 
-    'The Simpsons' => 'December 17, 1989 - Current', 
-    'Invalid data1' => '', 
-    'Invalid data2' => null, 
-    null => 'December 17, 1999 - Current', 
-    '' => 'December 17, 1999 - Current', 
-];
+// Create a new BookRepository
+$bookRepository = new BookRepository('book_store.json');
 
-// Here you can call filterInvalidShows and store the resulting array in a variable
-// In the HTML portion of the document we will open some PHP tags and output the show info.
+// Create some books
+$lordOfTheRings = new Book('Lord of the rings', 'j.r.. tol', '9780358653035');
+$briefHistoryOfTime = new Book('A Brief History of time', "Stephen Hawking", '9780553380163');
+$twentyThousandLeaguesUnderTheSea = new Book('20,000 Leagues Under the Sea', 'Jules Verne', '9781949460575');
 
-$validatedShows = filterInvalidShows($shows);
+// Save the new books in the repository
+$bookRepository->saveBook($lordOfTheRings);
+$bookRepository->saveBook($briefHistoryOfTime);
+$bookRepository->saveBook($twentyThousandLeaguesUnderTheSea);
 
-?>
+// Get them and loop over them
+$books = $bookRepository->getAllBooks();
+printf(PHP_EOL . "There are %d books saved to the store:" . PHP_EOL, count($books));
+foreach ($books as $book) {
+	printBook($book);
+}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lab 1</title>
-</head>
-<body>
-    <h3>Shows</h3>
-    <div>
-        <?php
-        // You can access variables defined in the above PHP tags here. 
-        // Use an (alternative syntax) foreach loop here: https://www.php.net/manual/en/control-structures.foreach.php
-        // and within the loop, print/echo out the results
-        foreach($validatedShows as $title => $date){
-            echo("<p><strong>$title:</strong> $date</p>");
-        }
-        ?>
-    </div>
-</body>
-</html>
+// Carry out some operations on the books in the repository
+printf(PHP_EOL . "We will now carry out some update and delete operations on the store." . PHP_EOL . PHP_EOL);
+echo 'Updating book with ISBN "9780358653035" (Lord of the Rings), to have the correct author and title.' . PHP_EOL;
+$bookRepository->updateBook("9780358653035", new Book("The Lord of the Rings", "J.R.R. Tolkien", "9780358653035"));
+$bookRepository->updateBook("9780553380163", new Book("A Brief History of Time", "Stephen Hawking", "9780553380163"));
+$bookRepository->deleteBookByISBN("9780553380163");
+
+// Get the updated books and loop over them
+$books = $bookRepository->getAllBooks();
+$briefHistoryOfTimeResult = $bookRepository->getBookByTitle('A Brief History of Time');
+if ($briefHistoryOfTimeResult === null) {
+	echo '"A Brief History of Time" is not in the repository' . PHP_EOL;
+}
+
+printf(PHP_EOL . "There are now %d books saved to the store:" . PHP_EOL, count($books));
+foreach ($books as $book) {
+	printBook($book);
+}
